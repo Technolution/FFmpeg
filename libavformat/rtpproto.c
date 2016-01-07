@@ -323,6 +323,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     char path[1024];
     const char *p;
     int i, max_retry_count = 3;
+    int rtcpflags;
 
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &rtp_port,
                  path, sizeof(path), uri);
@@ -387,12 +388,13 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
             s->local_rtpport = -1;
             continue;
         }
+        rtcpflags = flags | AVIO_FLAG_WRITE;
         if (s->local_rtcpport < 0) {
             s->local_rtcpport = s->local_rtpport + 1;
             build_udp_url(s, buf, sizeof(buf),
                           hostname, s->rtcp_port, s->local_rtcpport,
                           sources, block);
-            if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0) {
+            if (ffurl_open(&s->rtcp_hd, buf, rtcpflags, &h->interrupt_callback, NULL) < 0) {
                 s->local_rtpport = s->local_rtcpport = -1;
                 continue;
             }
@@ -401,7 +403,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         build_udp_url(s, buf, sizeof(buf),
                       hostname, s->rtcp_port, s->local_rtcpport,
                       sources, block);
-        if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
+        if (ffurl_open(&s->rtcp_hd, buf, rtcpflags, &h->interrupt_callback, NULL) < 0)
             goto fail;
         break;
     }
